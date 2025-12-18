@@ -1,0 +1,237 @@
+@startuml
+
+title MVC - Analizador Simplificado (Modelo Limpio + LLM) - Actualizado
+
+package "Modelo" {
+    class Token {
+        +type: TokenType
+        +lexema: String
+        +linea: int
+        +columna: int
+    }
+
+    enum TokenType {
+        KEYWORD_IF
+        KEYWORD_THEN
+        KEYWORD_ELSE
+        KEYWORD_FOR
+        KEYWORD_WHILE
+        KEYWORD_REPEAT
+        KEYWORD_UNTIL
+        KEYWORD_BEGIN
+        KEYWORD_END
+        IDENTIFIER
+        NUMBER
+        STRING
+        ASSIGN
+        PLUS
+        MINUS
+        MULT
+        DIV
+        MOD
+        LT
+        GT
+        LE
+        GE
+        EQ
+        NEQ
+        LPAREN
+        RPAREN
+        COMMA
+        COMMENT
+    }
+
+    class Lexer {
+        +tokenizar(codigo: String): ListToken
+    }
+
+    class Parser {
+        -tokens: ListToken
+        -pos: int
+        +parse(codigo: String): AST
+        +parseProgram(): ProgramNode
+        +parseStatement(): Node
+        +parseExpression(): ExpressionNode
+        +obtenerErrores(): ListParseError
+    }
+
+    class AST {
+        +raiz: ProgramNode
+    }
+
+    abstract class Node
+
+    class ProgramNode {
+        +sentencias: ListNode
+    }
+    ProgramNode --|> Node
+
+    class AssignmentNode {
+        +identificador: String
+        +expresion: ExpressionNode
+    }
+    AssignmentNode --|> Node
+
+    class IfNode {
+        +condicion: ExpressionNode
+        +thenBlock: ListNode
+        +elseBlock: ListNode
+    }
+    IfNode --|> Node
+
+    class ForNode {
+        +variable: String
+        +inicio: ExpressionNode
+        +fin: ExpressionNode
+        +cuerpo: ListNode
+    }
+    ForNode --|> Node
+
+    class WhileNode {
+        +condicion: ExpressionNode
+        +cuerpo: ListNode
+    }
+    WhileNode --|> Node
+
+    class RepeatNode {
+        +condicion: ExpressionNode
+        +cuerpo: ListNode
+    }
+    RepeatNode --|> Node
+
+    abstract class ExpressionNode
+    ExpressionNode --|> Node
+
+    class BinaryExpressionNode {
+        +operador: TokenType
+        +izquierda: ExpressionNode
+        +derecha: ExpressionNode
+    }
+    BinaryExpressionNode --|> ExpressionNode
+
+    class LiteralNode {
+        +valor: String
+    }
+    LiteralNode --|> ExpressionNode
+
+    class IdentifierNode {
+        +nombre: String
+    }
+    IdentifierNode --|> ExpressionNode
+
+    class ComplexityAnalyzer {
+        +analizar(ast: AST): ComplexityResult
+    }
+
+    class ComplexityResult {
+        +O: String
+        +Omega: String
+        +Theta: String
+        +detalles: String
+    }
+
+    class Environment {
+        +tabla: MapStringAny
+        +parent: Environment
+        +crearHijo(): Environment
+    }
+
+    class ExecutionTrace {
+        +linea: int
+        +accion: String
+        +snapshot: Environment
+    }
+
+    class ParseError {
+        +linea: int
+        +mensaje: String
+        +fragmento: String
+    }
+
+    class Executor {
+        -trazas: ListExecutionTrace
+        -indiceActual: int
+        +ejecutar(ast: AST): Environment
+        +ejecutarPasoAPaso(ast: AST): ListExecutionTrace
+        +siguientePaso(): ExecutionTrace
+        +pasoAnterior(): ExecutionTrace
+        +reiniciarPasoAPaso()
+        +reiniciarEjecucion()
+        +ejecutarNodo(node: Node, env: Environment)
+        +evaluar(expr: ExpressionNode, env: Environment): Any
+    }
+
+    class SourceMap {
+        +nodoALinea: MapNodeInt
+        +obtenerLinea(node: Node): int
+    }
+}
+
+package "Vista" {
+    class GUIView {
+        +obtenerCodigo(): String
+        +obtenerDescripcion(): String
+        +seleccionarArchivo(): String
+        +mostrarTokens(tokens: ListToken)
+        +mostrarResultado(result: ComplexityResult)
+        +mostrarError(msg: String)
+        +resaltarLinea(linea: int)
+        +mostrarAmbientes(env: Environment)
+        +mostrarTrazas(trazas: ListExecutionTrace)
+        +mostrarCodigo(codigo: String)
+        +validacionComplejidad(detalle: String)
+        +ejecutar()
+        +ejecutarPasoAPaso()
+        +siguientePaso()
+        +pasoAnterior()
+        +reiniciarPasoAPaso()
+        +reiniciarEjecucion()
+    }
+}
+
+package "Controlador" {
+    class Controller {
+        -vista: GUIView
+        -lexer: Lexer
+        -parser: Parser
+        -analyzer: ComplexityAnalyzer
+        -executor: Executor
+        -fileManager: FileManager
+        -llmService: LLMService
+        -ultimoCodigo: String
+        -ultimoAST: AST
+        -erroresParseo: ListParseError
+        +procesarTexto(codigo: String)
+        +procesarArchivo(ruta: String)
+        +parsear(codigo: String): AST        
+        +analizarComplejidad(ast: AST)
+        +ejecutar()
+        +ejecutarPasoAPaso()
+        +generarAmbientes(ast: AST)
+        +siguientePaso()
+        +pasoAnterior()
+        +reiniciarPasoAPaso()
+        +reiniciarEjecucion()
+        +mostrarDetalleError()
+        +llmGenerarPseudocodigo(descripcion: String)
+        +llmValidarComplejidad(codigo: String, resultado: ComplexityResult)
+    }
+}
+
+package "Servicios" {
+    class FileManager {
+        +leerArchivo(ruta: String): String
+        +guardarArchivo(ruta: String, contenido: String)
+    }
+
+    class LLMService {
+        +generarPseudocodigo(descripcion: String): String
+        +validarComplejidad(codigo: String, resultado: ComplexityResult): String
+    }
+}
+
+Vista -[hidden]down- Controlador
+
+Controlador -[hidden]down- Servicios
+
+@enduml

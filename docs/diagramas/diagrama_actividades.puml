@@ -1,0 +1,101 @@
+@startuml
+
+|Usuario|
+start
+:Ingresar código / Cargar archivo / Generar con LLM;
+
+|GUIView|
+:Mostrar código;
+
+|Controller|
+:Recibir código;
+
+partition "Procesamiento automático" {
+
+    |Lexer|
+    :Tokenizar;
+
+    |Parser|
+    :Parsear;
+
+    if (¿Error léxico o sintáctico?) then (Sí)
+        |Controller|
+        :Registrar error;
+
+        |GUIView|
+        :Mostrar banner de error;
+
+        |Usuario|
+        :Solicitar detalle;
+
+        |GUIView|
+        :Mostrar detalle del error;
+        stop
+    else (No)
+        |Controller|
+        :AST válido;
+    endif
+}
+
+' ===== Punto de bifurcación desde AST válido =====
+fork
+
+' ---------- ANÁLISIS ----------
+partition "Análisis de complejidad" {
+    |Usuario|
+    :Solicitar análisis;
+
+    |ComplexityAnalyzer|
+    :Analizar AST;
+
+    |GUIView|
+    :Mostrar resultado;
+}
+
+' ---------- VALIDACIÓN LLM ----------
+partition "Validación con LLM (opcional)" {
+    |Usuario|
+    :Validar complejidad;
+
+    |LLMService|
+    :Validar resultado;
+
+    |GUIView|
+    :Mostrar validación;
+    stop
+}
+
+' ---------- EJECUCIÓN COMPLETA ----------
+partition "Ejecución completa" {
+    |Usuario|
+    :Ejecutar;
+
+    |Executor|
+    :Ejecutar AST;
+
+    |GUIView|
+    :Mostrar ambientes;
+}
+
+' ---------- EJECUCIÓN PASO A PASO ----------
+partition "Ejecución paso a paso" {
+    |Usuario|
+    :Ejecutar paso a paso;
+
+    |Executor|
+    :Generar trazas;
+
+    while (¿Quedan pasos?) is (Sí)
+        |Usuario|
+        :Siguiente / Anterior;
+        |GUIView|
+        :Resaltar línea;
+        :Mostrar ambiente parcial;
+    endwhile
+}
+
+end fork
+
+stop
+@enduml
+

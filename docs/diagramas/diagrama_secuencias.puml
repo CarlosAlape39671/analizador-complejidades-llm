@@ -1,0 +1,131 @@
+@startuml
+
+actor Usuario
+participant GUIView
+participant Controller
+participant FileManager
+participant LLMService
+participant Lexer
+participant Parser
+participant ComplexityAnalyzer
+participant Executor
+participant Environment
+
+== Cargar archivo (procesamiento automático) ==
+Usuario -> GUIView: seleccionarArchivo()
+GUIView -> Controller: procesarArchivo(ruta)
+Controller -> FileManager: leerArchivo(ruta)
+FileManager --> Controller: codigo
+Controller -> Lexer: tokenizar(codigo)
+Lexer --> Controller: tokens
+Controller -> Parser: parse(codigo)
+
+alt Error léxico o sintáctico
+    Parser --> Controller: error
+    Controller -> GUIView: mostrarErrorBanner("Error en el código")
+else Código válido
+    Parser --> Controller: ast
+    Controller -> GUIView: mostrarCodigo(codigo)
+    Controller -> GUIView: mostrarAST(ast)
+end
+
+note over Controller,GUIView: Lexer y Parser se ejecutan automáticamente. Tokens y AST quedan disponibles.
+
+== Ingreso manual de código ==
+Usuario -> GUIView: escribirCodigo()
+Usuario -> GUIView: ejecutar()
+GUIView -> Controller: ejecutar(codigo)
+
+Controller -> Lexer: tokenizar(codigo)
+Lexer --> Controller: tokens
+Controller -> Parser: parse(codigo)
+
+alt Error léxico o sintáctico
+    Parser --> Controller: error
+    Controller -> GUIView: mostrarErrorBanner("Error en el código")
+else Código válido
+    Parser --> Controller: ast
+    Controller -> Executor: ejecutar(ast)
+end
+
+== Ver detalle del error (opcional) ==
+Usuario -> GUIView: verDetalleError()
+GUIView -> Controller: solicitarDetalleError()
+Controller -> GUIView: mostrarDetalleError(infoError)
+
+== Generar pseudocódigo con LLM ==
+Usuario -> GUIView: solicitarPseudocodigo()
+GUIView -> Controller: llmGenerarPseudocodigo(descripcion)
+Controller -> LLMService: generarPseudocodigo(descripcion)
+LLMService --> Controller: pseudocodigo
+Controller -> Lexer: tokenizar(pseudocodigo)
+Lexer --> Controller: tokens
+Controller -> Parser: parse(pseudocodigo)
+
+alt Error sintáctico
+    Parser --> Controller: error
+    Controller -> GUIView: mostrarErrorBanner("Error en pseudocódigo generado")
+else Código válido
+    Parser --> Controller: ast
+    Controller -> GUIView: mostrarCodigo(pseudocodigo)
+    Controller -> GUIView: mostrarAST(ast)
+end
+
+== Mostrar tokens (acción explícita) ==
+Usuario -> GUIView: mostrarTokens()
+GUIView -> Controller: solicitarTokens()
+Controller --> GUIView: tokens
+GUIView -> GUIView: mostrarTokens(tokens)
+
+== Analizar complejidad ==
+Usuario -> GUIView: solicitarAnalisis()
+GUIView -> Controller: analizarComplejidad(ast)
+Controller -> ComplexityAnalyzer: analizar(ast)
+ComplexityAnalyzer --> Controller: resultado
+Controller -> GUIView: mostrarResultado(resultado)
+
+== Validar complejidad con LLM ==
+Usuario -> GUIView: validarComplejidad()
+GUIView -> Controller: llmValidarComplejidad(codigo, resultado)
+Controller -> LLMService: validarComplejidad(codigo, resultado)
+LLMService --> Controller: validacion
+Controller -> GUIView: validacionComplejidad(validacion)
+
+== Ejecución completa ==
+Usuario -> GUIView: ejecutar()
+GUIView -> Controller: ejecutar(ast)
+Controller -> Executor: ejecutar(ast)
+Executor -> Environment: crearHijo()
+Environment --> Executor: ambienteFinal
+Executor --> Controller: ambienteFinal
+Controller -> GUIView: mostrarAmbientes(ambienteFinal)
+
+== Reiniciar ejecución ==
+Usuario -> GUIView: reiniciarEjecucion()
+GUIView -> Controller: reiniciarEjecucion()
+Controller -> GUIView: limpiarVista()
+
+== Ejecución paso a paso ==
+Usuario -> GUIView: ejecutarPasoAPaso()
+GUIView -> Controller: ejecutarPasoAPaso(ast)
+Controller -> Executor: ejecutarPasoAPaso(ast)
+Executor --> Controller: trazas
+Controller -> GUIView: mostrarTrazas(trazas)
+
+== Navegación paso a paso ==
+Usuario -> GUIView: siguiente()
+GUIView -> Controller: siguientePaso()
+Controller -> GUIView: resaltarLinea(linea)
+Controller -> GUIView: mostrarAmbientes(snapshot)
+
+Usuario -> GUIView: pasoAnterior()
+GUIView -> Controller: pasoAnterior()
+Controller -> GUIView: resaltarLinea(linea)
+Controller -> GUIView: mostrarAmbientes(snapshot)
+
+== Reiniciar paso a paso ==
+Usuario -> GUIView: reiniciarPasoAPaso()
+GUIView -> Controller: reiniciarPasoAPaso()
+Controller -> GUIView: limpiarVista()
+
+@enduml

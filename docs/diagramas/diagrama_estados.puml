@@ -1,0 +1,89 @@
+@startuml
+
+title Diagrama de Estados (Parseo implícito, reinicios y LLM)
+
+state Sistema {
+
+    [*] --> Idle
+
+    Idle : Sistema en espera
+
+    ' === Entrada de código ===
+    Idle --> CodigoDisponible : usuarioIngresaCodigo / GUIView.obtenerCodigo()
+    Idle --> CodigoDisponible : usuarioSeleccionaArchivo / FileManager.leerArchivo()
+    Idle --> CodigoDisponible : usuarioSolicitaPseudocodigo / LLMService.generarPseudocodigo()
+
+    state CodigoDisponible {
+        [*] --> CodigoCargado
+        CodigoCargado : Código almacenado\n(sin parsear)
+    }
+
+    CodigoDisponible --> MostrandoTokens : usuarioSolicitaTokens / GUIView.mostrarTokens()
+
+    ' === Acciones que requieren parseo ===
+    CodigoDisponible --> ParseoInterno : usuarioEjecuta | usuarioEjecutaPasoAPaso | usuarioSolicitaAnalisis | usuarioValidaComplejidad
+
+    state ParseoInterno {
+        [*] --> Tokenizando
+        Tokenizando --> ConstruyendoAST : Parser.parse()
+        ConstruyendoAST --> ASTValido : parseOK
+        ConstruyendoAST --> ErrorSintactico : parseERROR
+    }
+
+    ParseoInterno --> Idle : ErrorSintactico / GUIView.mostrarError()
+
+    ' === Análisis de complejidad ===
+    ASTValido --> AnalizandoComplejidad : usuarioSolicitaAnalisis
+
+    state AnalizandoComplejidad {
+        [*] --> Calculando
+        Calculando --> ComplejidadLista
+    }
+
+    AnalizandoComplejidad --> MostrandoResultado : GUIView.mostrarResultado()
+
+    ' === Validación por LLM ===
+    MostrandoResultado --> LLM_Validando : usuarioValidaComplejidad
+
+    state LLM_Validando {
+        [*] --> Validando
+        Validando --> ValidacionLista
+    }
+
+    LLM_Validando --> MostrandoValidacion : GUIView.validacionComplejidad()
+
+    ' === Ejecución normal ===
+    ASTValido --> Ejecutando : usuarioEjecuta
+
+    state Ejecutando {
+        [*] --> Interpretando
+        Interpretando --> AmbienteFinal
+    }
+
+    Ejecutando --> MostrandoAmbientes : GUIView.mostrarAmbientes()
+
+    ' === Ejecución paso a paso ===
+    ASTValido --> PasoAPaso : usuarioEjecutaPasoAPaso
+
+    state PasoAPaso {
+        [*] --> PasoActual
+        PasoActual --> PasoActual : siguientePaso / Controller.siguientePaso()
+        PasoActual --> PasoActual : pasoAnterior / Controller.pasoAnterior()
+    }
+
+    PasoAPaso --> MostrandoTraza : GUIView.mostrarTrazas()
+    PasoAPaso --> MostrandoAmbientes : GUIView.mostrarAmbientes()
+
+    ' === Reinicios ===
+    Ejecutando --> Idle : reiniciarEjecucion
+    PasoAPaso --> Idle : reiniciarPasoAPaso
+    MostrandoAmbientes --> Idle : reiniciarEjecucion
+    MostrandoTraza --> Idle : reiniciarPasoAPaso
+
+    ' === Finales ===
+    MostrandoResultado --> Idle : finalizar
+    MostrandoValidacion --> Idle : finalizar
+
+}
+
+@enduml
