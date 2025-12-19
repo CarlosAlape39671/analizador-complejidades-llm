@@ -10,7 +10,8 @@ from model.ast.literal_node import LiteralNode
 from model.ast.binary_expression_node import BinaryExpressionNode
 from model.ast.if_node import IfNode
 from model.ast.while_node import WhileNode
-
+from model.ast.for_node import ForNode
+from model.ast.repeat_node import RepeatNode
 
 
 
@@ -73,14 +74,20 @@ class Parser:
         """
         token = self._actual()
 
+        if token.type == TokenType.IDENTIFIER:
+            return self.parse_assignment()
+
         if token.type == TokenType.KEYWORD_IF:
             return self.parse_if()
-        
+
         if token.type == TokenType.KEYWORD_WHILE:
             return self.parse_while()
 
-        if token.type == TokenType.IDENTIFIER:
-            return self.parse_assignment()
+        if token.type == TokenType.KEYWORD_FOR:
+            return self.parse_for()
+        
+        if token.type == TokenType.KEYWORD_REPEAT:
+            return self.parse_repeat()
 
         self._error(token, "Sentencia no reconocida")
         return None
@@ -274,6 +281,104 @@ class Parser:
         )
 
         return WhileNode(condicion, cuerpo)
+    
+    def parse_for(self):
+        """
+        for_statement ->
+            FOR IDENTIFIER ASSIGN expression TO expression
+            BEGIN statement* END
+        """
+
+        # for
+        self._consumir(
+            TokenType.KEYWORD_FOR,
+            "Se esperaba 'for'"
+        )
+
+        # variable de control
+        identificador = self._consumir(
+            TokenType.IDENTIFIER,
+            "Se esperaba un identificador en el for"
+        )
+
+        # :=
+        self._consumir(
+            TokenType.ASSIGN,
+            "Se esperaba ':=' en el for"
+        )
+
+        # expresión inicial
+        inicio = self.parse_expression()
+
+        # to
+        self._consumir(
+            TokenType.KEYWORD_TO,
+            "Se esperaba 'to' en el for"
+        )
+
+        # expresión final
+        fin = self.parse_expression()
+
+        # begin
+        self._consumir(
+            TokenType.KEYWORD_BEGIN,
+            "Se esperaba 'begin' en el for"
+        )
+
+        # cuerpo del for
+        cuerpo = []
+        while not self._verificar(TokenType.KEYWORD_END) and not self._es_fin():
+            stmt = self.parse_statement()
+            if stmt is not None:
+                cuerpo.append(stmt)
+            else:
+                self._sincronizar()
+
+        # end
+        self._consumir(
+            TokenType.KEYWORD_END,
+            "Se esperaba 'end' para cerrar el for"
+        )
+
+        return ForNode(
+            identificador.lexema,
+            inicio,
+            fin,
+            cuerpo
+        )
+    
+    def parse_repeat(self):
+        """
+        repeat_statement ->
+            REPEAT statement* UNTIL expression
+        """
+
+        # repeat
+        self._consumir(
+            TokenType.KEYWORD_REPEAT,
+            "Se esperaba 'repeat'"
+        )
+
+        cuerpo = []
+
+        # cuerpo del repeat
+        while not self._verificar(TokenType.KEYWORD_UNTIL) and not self._es_fin():
+            stmt = self.parse_statement()
+            if stmt is not None:
+                cuerpo.append(stmt)
+            else:
+                self._sincronizar()
+
+        # until
+        self._consumir(
+            TokenType.KEYWORD_UNTIL,
+            "Se esperaba 'until' para cerrar el repeat"
+        )
+
+        # condición
+        condicion = self.parse_expression()
+
+        return RepeatNode(condicion, cuerpo)
 
 
     # =========================

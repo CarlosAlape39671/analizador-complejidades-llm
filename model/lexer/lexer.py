@@ -20,6 +20,7 @@ class Lexer:
         "then": TokenType.KEYWORD_THEN,
         "else": TokenType.KEYWORD_ELSE,
         "for": TokenType.KEYWORD_FOR,
+        "to": TokenType.KEYWORD_TO,
         "while": TokenType.KEYWORD_WHILE,
         "repeat": TokenType.KEYWORD_REPEAT,
         "until": TokenType.KEYWORD_UNTIL,

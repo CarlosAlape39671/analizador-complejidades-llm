@@ -14,6 +14,7 @@ class TokenType(Enum):
     KEYWORD_THEN = auto()
     KEYWORD_ELSE = auto()
     KEYWORD_FOR = auto()
+    KEYWORD_TO = auto()
     KEYWORD_WHILE = auto()
     KEYWORD_REPEAT = auto()
     KEYWORD_UNTIL = auto()
