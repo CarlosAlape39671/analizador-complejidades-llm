@@ -108,7 +108,8 @@ class Parser:
 
         return AssignmentNode(
             identificador.lexema,
-            expresion
+            expresion,
+            linea=identificador.linea
         )
 
     # =========================
@@ -196,8 +197,7 @@ class Parser:
             END
         """
 
-        # consumir 'if'
-        self._consumir(
+        if_token = self._consumir(
             TokenType.KEYWORD_IF,
             "Se esperaba 'if'"
         )
@@ -219,7 +219,7 @@ class Parser:
             and not self._es_fin()
         ):
             stmt = self.parse_statement()
-            if stmt is not None:
+            if stmt:
                 then_block.append(stmt)
             else:
                 self._sincronizar()
@@ -233,7 +233,7 @@ class Parser:
                 and not self._es_fin()
             ):
                 stmt = self.parse_statement()
-                if stmt is not None:
+                if stmt:
                     else_block.append(stmt)
                 else:
                     self._sincronizar()
@@ -247,7 +247,8 @@ class Parser:
         return IfNode(
             condicion=condicion,
             thenBlock=then_block,
-            elseBlock=else_block
+            elseBlock=else_block,
+            linea=if_token.linea
         )
 
     def parse_while(self):

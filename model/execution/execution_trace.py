@@ -10,5 +10,8 @@ class ExecutionTrace:
         self.accion = accion
         self.snapshot = snapshot
 
+    def __str__(self):
+        return f"[Línea {self.linea}] {self.accion}"
+
     def __repr__(self):
         return f"Trace(linea={self.linea}, accion='{self.accion}')"

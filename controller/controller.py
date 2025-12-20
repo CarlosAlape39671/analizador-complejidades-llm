@@ -45,6 +45,7 @@ class Controller:
             if not ast:
                 return
 
+        self.executor.reiniciarEjecucion()
         ambiente = self.executor.ejecutar(self.ultimoAST)
         self.vista.mostrarAmbientes(ambiente)
 
@@ -83,3 +84,13 @@ class Controller:
             self.vista.mostrarError(
                 f"Línea {err.linea}: {err.mensaje} -> {err.fragmento}"
             )
+
+    def procesarTexto(self, codigo):
+        self.ultimoCodigo = codigo
+        self.ultimoAST = None
+    
+    def procesarArchivo(self, ruta):
+        codigo = self.fileManager.leerArchivo(ruta)
+        self.ultimoCodigo = codigo
+        self.ultimoAST = None
+        self.vista.mostrarCodigo(codigo)

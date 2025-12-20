@@ -3,4 +3,5 @@ class Node:
     Nodo base del AST.
     Todos los nodos del lenguaje heredan de esta clase.
     """
-    pass
+    def __init__(self, linea=None):
+        self.linea = linea

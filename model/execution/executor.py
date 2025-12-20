@@ -12,6 +12,8 @@ from model.ast.repeat_node import RepeatNode
 from model.ast.binary_expression_node import BinaryExpressionNode
 from model.ast.literal_node import LiteralNode
 from model.ast.identifier_node import IdentifierNode
+from model.source_map import SourceMap
+
 
 
 class Executor:
@@ -21,6 +23,7 @@ class Executor:
     """
 
     def __init__(self):
+        self.sourceMap = SourceMap()
         self.trazas = []
         self.indiceActual = 0
 
@@ -33,6 +36,16 @@ class Executor:
         return env
 
     def ejecutarNodo(self, node, env):
+        linea = getattr(node, "linea", -1)
+
+        self.trazas.append(
+            ExecutionTrace(
+                linea=linea,
+                accion=f"Ejecutando {type(node).__name__}",
+                snapshot=env.copiar()
+            )
+        )
+
         if isinstance(node, ProgramNode):
             for stmt in node.sentencias:
                 self.ejecutarNodo(stmt, env)
@@ -41,8 +54,25 @@ class Executor:
             valor = self.evaluar(node.expresion, env)
             env.definir(node.identificador, valor)
 
+            self.trazas.append(
+                ExecutionTrace(
+                    linea=node.linea,
+                    accion=f"{node.identificador} = {valor}",
+                    snapshot=env.copiar()
+                )
+            )
+
         elif isinstance(node, IfNode):
             condicion = self.evaluar(node.condicion, env)
+
+            self.trazas.append(
+                ExecutionTrace(
+                    linea=node.linea,
+                    accion=f"IF condición = {condicion}",
+                    snapshot=env.copiar()
+                )
+            )
+                    
             if condicion:
                 for stmt in node.thenBlock:
                     self.ejecutarNodo(stmt, env)
@@ -52,6 +82,15 @@ class Executor:
 
         elif isinstance(node, WhileNode):
             while self.evaluar(node.condicion, env):
+
+                self.trazas.append(
+                    ExecutionTrace(
+                        linea=node.linea,
+                        accion="Iteración WHILE",
+                        snapshot=env.copiar()
+                    )
+                )
+
                 for stmt in node.cuerpo:
                     self.ejecutarNodo(stmt, env)
 
@@ -61,7 +100,24 @@ class Executor:
 
             env.definir(node.variable, inicio)
 
+            self.trazas.append(
+                ExecutionTrace(
+                    linea=node.linea,
+                    accion=f"FOR inicia {node.variable} = {inicio} hasta {fin}",
+                    snapshot=env.copiar()
+                )
+            )
+
             while env.obtener(node.variable) <= fin:
+
+                self.trazas.append(
+                    ExecutionTrace(
+                        linea=node.linea,
+                        accion=f"Iteración FOR {node.variable} = {env.obtener(node.variable)}",
+                        snapshot=env.copiar()
+                    )
+                )
+
                 for stmt in node.cuerpo:
                     self.ejecutarNodo(stmt, env)
 
@@ -71,9 +127,28 @@ class Executor:
                 )
 
         elif isinstance(node, RepeatNode):
+            self.trazas.append(
+                ExecutionTrace(
+                    linea=node.linea,
+                    accion="Inicio REPEAT",
+                    snapshot=env.copiar()
+                )
+            )
+
             while True:
                 for stmt in node.cuerpo:
                     self.ejecutarNodo(stmt, env)
+
+                condicion = self.evaluar(node.condicion, env)
+
+                self.trazas.append(
+                    ExecutionTrace(
+                        linea=node.linea,
+                        accion=f"REPEAT condición = {condicion}",
+                        snapshot=env.copiar()
+                    )
+                )
+
                 if self.evaluar(node.condicion, env):
                     break
 
@@ -138,7 +213,7 @@ class Executor:
             ExecutionTrace(
                 linea=getattr(node, "linea", -1),
                 accion=type(node).__name__,
-                snapshot=self._clonarEnv(env)
+                snapshot=env.copiar()
             )
         )
 
@@ -178,11 +253,6 @@ class Executor:
                     self._ejecutarNodoConTraza(stmt, env)
                 if self.evaluar(node.condicion, env):
                     break
-
-    def _clonarEnv(self, env):
-        copia = Environment(env.parent)
-        copia.tabla = env.tabla.copy()
-        return copia
 
     def siguientePaso(self):
         if self.indiceActual < len(self.trazas):

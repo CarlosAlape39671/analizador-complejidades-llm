@@ -33,6 +33,22 @@ class Environment:
             return self.parent.obtener(nombre)
 
         raise RuntimeError(f"Variable '{nombre}' no definida")
+    
+    def copiar(self):
+        """
+        Crea una copia profunda del entorno actual.
+        Útil para capturar snapshots en ejecución paso a paso.
+        """
+        # Copiar el entorno padre (si existe)
+        parent_copia = self.parent.copiar() if self.parent else None
+
+        # Crear nuevo entorno
+        copia = Environment(parent=parent_copia)
+
+        # Copiar variables del entorno actual
+        copia.tabla = self.tabla.copy()
+
+        return copia
 
     def __repr__(self):
         return f"Environment({self.tabla}, parent={self.parent is not None})"
