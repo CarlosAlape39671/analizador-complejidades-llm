@@ -12,6 +12,8 @@ from model.ast.if_node import IfNode
 from model.ast.while_node import WhileNode
 from model.ast.for_node import ForNode
 from model.ast.repeat_node import RepeatNode
+from model.source_map import SourceMap
+
 
 
 
@@ -25,6 +27,7 @@ class Parser:
         self.tokens = []
         self.pos = 0
         self.errores = []
+        self.sourceMap = SourceMap()
 
     # =========================
     # API pública
@@ -44,7 +47,7 @@ class Parser:
         if self.errores:
             return None
 
-        return AST(program)
+        return AST(program, self.sourceMap)
 
     def obtenerErrores(self):
         return self.errores
@@ -255,7 +258,7 @@ class Parser:
         """
         while_stmt -> WHILE expression BEGIN statement* END
         """
-        self._consumir(
+        while_token = self._consumir(
             TokenType.KEYWORD_WHILE,
             "Se esperaba la palabra clave 'while'"
         )
@@ -281,7 +284,7 @@ class Parser:
             "Se esperaba 'end' para cerrar el bloque del while"
         )
 
-        return WhileNode(condicion, cuerpo)
+        return WhileNode(condicion, cuerpo, linea=while_token.linea)
     
     def parse_for(self):
         """
@@ -291,7 +294,7 @@ class Parser:
         """
 
         # for
-        self._consumir(
+        for_token = self._consumir(
             TokenType.KEYWORD_FOR,
             "Se esperaba 'for'"
         )
@@ -345,7 +348,8 @@ class Parser:
             identificador.lexema,
             inicio,
             fin,
-            cuerpo
+            cuerpo,
+            linea=for_token.linea
         )
     
     def parse_repeat(self):
@@ -355,7 +359,7 @@ class Parser:
         """
 
         # repeat
-        self._consumir(
+        repeat_token = self._consumir(
             TokenType.KEYWORD_REPEAT,
             "Se esperaba 'repeat'"
         )
@@ -379,7 +383,7 @@ class Parser:
         # condición
         condicion = self.parse_expression()
 
-        return RepeatNode(condicion, cuerpo)
+        return RepeatNode(condicion, cuerpo, linea=repeat_token.linea)
 
 
     # =========================

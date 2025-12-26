@@ -1,23 +1,20 @@
-# model/source_map.py
-
 class SourceMap:
-    """
-    Mapea nodos del AST a líneas del código fuente.
-    Permite saber qué línea ejecutar o resaltar en la vista.
-    """
-
     def __init__(self):
-        self.nodoALinea = {}
+        self.nodo_a_linea = {}
+        self.linea_a_nodos = {}
 
-    def registrar(self, nodo, linea: int):
-        """
-        Asocia un nodo del AST con una línea del código.
-        """
-        self.nodoALinea[nodo] = linea
+    def registrar(self, nodo, linea):
+        # Si el nodo ya estaba registrado, limpiar vínculo anterior
+        if nodo in self.nodo_a_linea:
+            linea_anterior = self.nodo_a_linea[nodo]
+            self.linea_a_nodos[linea_anterior].remove(nodo)
+
+        self.nodo_a_linea[nodo] = linea
+        self.linea_a_nodos.setdefault(linea, []).append(nodo)
 
     def obtenerLinea(self, nodo):
-        """
-        Retorna la línea asociada a un nodo.
-        Si no existe, retorna -1.
-        """
-        return self.nodoALinea.get(nodo, -1)
+        return self.nodo_a_linea.get(nodo)
+
+    def obtenerNodos(self, linea):
+        return self.linea_a_nodos.get(linea, [])
+

@@ -33,10 +33,11 @@ class Executor:
         """
         env = Environment()
         self.ejecutarNodo(ast.raiz, env)
+        self.sourceMap = ast.sourceMap
         return env
 
     def ejecutarNodo(self, node, env):
-        linea = getattr(node, "linea", -1)
+        linea = self.sourceMap.obtenerLinea(node)
 
         self.trazas.append(
             ExecutionTrace(
@@ -57,7 +58,7 @@ class Executor:
             self.trazas.append(
                 ExecutionTrace(
                     linea=node.linea,
-                    accion=f"{node.identificador} = {valor}",
+                    accion=f"Asignación: {node.identificador} = {valor}",
                     snapshot=env.copiar()
                 )
             )
@@ -136,6 +137,14 @@ class Executor:
             )
 
             while True:
+                self.trazas.append(
+                    ExecutionTrace(
+                        linea=node.linea,
+                        accion="Iteración REPEAT",
+                        snapshot=env.copiar()
+                    )
+                )
+
                 for stmt in node.cuerpo:
                     self.ejecutarNodo(stmt, env)
 
