@@ -2,7 +2,7 @@ from controller.controller import Controller
 from view.gui_view import GUIView
 
 def main():
-    vista = GUIView()
+    vista = GUIView(None)
     controller = Controller(vista)
     vista.set_controller(controller)
     vista.iniciar()

@@ -1,3 +1,7 @@
+# test/test_source_map.py
+
+from email.parser import Parser
+from model.lexer.lexer import Lexer
 from model.source_map import SourceMap
 from model.ast.assignment_node import AssignmentNode
 from model.ast.literal_node import LiteralNode
@@ -54,3 +58,15 @@ def test_override_node_line():
     source_map.registrar(nodo, 10)
 
     assert source_map.obtenerLinea(nodo) == 10
+
+def test_sourcemap_assignment_line():
+    codigo = """x := 1
+y := 2"""
+
+    lexer = Lexer()
+    parser = Parser()
+
+    ast = parser.parse(lexer.tokenizar(codigo))
+
+    stmt = ast.raiz.sentencias[1]
+    assert stmt.linea == 2
