@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext
+from tkinter import ttk
 
 
 class GUIView:
@@ -11,6 +12,7 @@ class GUIView:
         self.root.title("Analizador de Complejidades")
 
         self._crear_componentes()
+        self.varNodes = {}
 
     def _crear_componentes(self):
         # Área de código
@@ -44,6 +46,93 @@ class GUIView:
         )
         self.env_text.pack(fill=tk.BOTH, expand=True)
 
+        # Configuración de tags para resaltar líneas
+        self.editor.tag_configure(
+            "linea_actual",
+            background="#ffeaa7"   # amarillo suave
+        )
+
+        # Panel de trazas
+        self.panelTrazas = tk.Listbox(
+            self.frameDerecho,
+            height=15
+        )
+
+        self.panelTrazas.pack(
+            fill=tk.BOTH,
+            expand=True,
+            padx=5,
+            pady=5
+        )
+
+        self.panelTrazas.bind("<<ListboxSelect>>", self._onTrazaSeleccionada)
+
+        # Panel de ambientes (árbol)
+        self.panelAmbientes = ttk.Treeview(
+            self.frameInferior,
+            columns=("valor",),
+            show="tree headings"
+        )
+
+        self.panelAmbientes.heading("#0", text="Variable")
+        self.panelAmbientes.heading("valor", text="Valor")
+
+        self.panelAmbientes.pack(
+            fill=tk.BOTH,
+            expand=True,
+            padx=5,
+            pady=5
+        )
+
+        # Configuración de tags para cambios en variables: definir colores
+        self.panelAmbientes.tag_configure(
+            "cambio",
+            background="#fff3cd"   # amarillo suave
+        )
+
+        self.panelAmbientes.tag_configure(
+            "nuevo",
+            background="#d4edda"   # verde suave
+        )
+
+
+
+    def _mostrar_env_recursivo(self, env, nivel=0):
+        indent = "  " * nivel
+        self.env_text.insert(
+            tk.END,
+            f"{indent}Ambiente nivel {nivel}:\n"
+        )
+
+        for var, val in env.tabla.items():
+            self.env_text.insert(
+                tk.END,
+                f"{indent}  {var} = {val}\n"
+            )
+
+        if env.parent:
+            self._mostrar_env_recursivo(env.parent, nivel + 1)
+
+    def _onTrazaSeleccionada(self, event):
+        seleccion = self.panelTrazas.curselection()
+        if not seleccion:
+            return
+
+        index = seleccion[0]
+        traza = self.trazas[index]
+
+        self.resaltarLinea(traza.linea)
+        self.mostrarAmbientes(traza.snapshot)
+    
+    def resaltarTraza(self, index):
+        self.panelTrazas.selection_clear(0, tk.END)
+        self.panelTrazas.selection_set(index)
+        self.panelTrazas.see(index)
+
+    def _limpiarAmbientes(self):
+        for item in self.panelAmbientes.get_children():
+            self.panelAmbientes.delete(item)
+
 
     # ======================
     # Métodos usados por Controller
@@ -56,10 +145,69 @@ class GUIView:
         messagebox.showerror("Error", msg)
 
     def mostrarAmbientes(self, env):
-        print(env)
+        self._limpiarAmbientes()
+
+        if env is None:
+            return
+
+        self._mostrarAmbienteRec(env, "Scope actual")
+        self.ultimoEnv = env
+
+        # if self.ultimoEnv and nombre in self.ultimoEnv.tabla:
+        #     if self.ultimoEnv.tabla[nombre] != valor:
+        #         # colorear
+
+
+    def _mostrarAmbienteRec(self, env, titulo):
+        nodo_scope = self.panelAmbientes.insert(
+            "",
+            "end",
+            text=titulo,
+            open=True
+        )
+
+        for nombre, valor in sorted(env.tabla.items()):
+            item_id = self.panelAmbientes.insert(
+                nodo_scope,
+                "end",
+                text=nombre,
+                values=(valor,)
+            )
+
+            # Guardar referencia
+            self.varNodes[(env, nombre)] = item_id
+
+            # ¿Cambió el valor?
+            if self.ultimoEnv:
+                try:
+                    valor_anterior = self._buscarValorAnterior(
+                        self.ultimoEnv, nombre
+                    )
+                    if valor_anterior != valor:
+                        self.panelAmbientes.item(
+                            item_id,
+                            tags=("cambio",)
+                        )
+                except:
+                    # Variable nueva
+                    self.panelAmbientes.item(
+                        item_id,
+                        tags=("nuevo",)
+                    )
+
+        if env.parent:
+            self._mostrarAmbienteRec(env.parent, "Scope padre")
 
     def mostrarTrazas(self, trazas):
         print(trazas)
+
+    def _buscarValorAnterior(self, env, nombre):
+        if nombre in env.tabla:
+            return env.tabla[nombre]
+        if env.parent:
+            return self._buscarValorAnterior(env.parent, nombre)
+        raise KeyError()
+
 
     # ======================
     # Acciones de usuario
@@ -82,29 +230,24 @@ class GUIView:
     def iniciar(self):
         self.root.mainloop()
 
-    def mostrarAmbientes(self, env):
-        self.env_text.config(state=tk.NORMAL)
-        self.env_text.delete("1.0", tk.END)
+    def resaltarLinea(self, linea):
+        # Quitar resaltados anteriores
+        self.editor.tag_remove("linea_actual", "1.0", tk.END)
 
-        if env is None:
-            self.env_text.insert(tk.END, "Sin ambiente de ejecución\n")
-        else:
-            self._mostrar_env_recursivo(env)
+        if linea < 1:
+            return
 
-        self.env_text.config(state=tk.DISABLED)
+        inicio = f"{linea}.0"
+        fin = f"{linea}.end"
 
-    def _mostrar_env_recursivo(self, env, nivel=0):
-        indent = "  " * nivel
-        self.env_text.insert(
-            tk.END,
-            f"{indent}Ambiente nivel {nivel}:\n"
-        )
+        self.editor.tag_add("linea_actual", inicio, fin)
+        self.editor.see(inicio)
 
-        for var, val in env.tabla.items():
-            self.env_text.insert(
-                tk.END,
-                f"{indent}  {var} = {val}\n"
-            )
+    def mostrarTrazas(self, trazas):
+        self.panelTrazas.delete(0, tk.END)
+        self.trazas = trazas  # guardamos referencia
 
-        if env.parent:
-            self._mostrar_env_recursivo(env.parent, nivel + 1)
+        for i, traza in enumerate(trazas):
+            texto = f"{i+1}. {traza.accion} (línea {traza.linea})"
+            self.panelTrazas.insert(tk.END, texto)
+

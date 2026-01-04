@@ -63,6 +63,7 @@ class Controller:
         if traza:
             self.vista.resaltarLinea(traza.linea)
             self.vista.mostrarAmbientes(traza.snapshot)
+            self.vista.resaltarTraza(self.executor.indiceActual - 1)
 
     def pasoAnterior(self):
         traza = self.executor.pasoAnterior()
