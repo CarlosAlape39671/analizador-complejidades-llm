@@ -26,14 +26,14 @@ class Controller:
 
         if self.lexer.obtenerErrores():
             self.erroresParseo = self.lexer.obtenerErrores()
-            self.vista.mostrarError("Error léxico en el código")
+            self.vista.mostrarError()
             return None
 
         ast = self.parser.parse(tokens)
 
         if ast is None:
             self.erroresParseo = self.parser.obtenerErrores()
-            self.vista.mostrarError("Error sintáctico en el código")
+            self.vista.mostrarError()
             return None
 
         self.ultimoAST = ast
@@ -58,6 +58,11 @@ class Controller:
         trazas = self.executor.ejecutarPasoAPaso(self.ultimoAST)
         self.vista.mostrarTrazas(trazas)
 
+        if trazas:
+            self.vista.resaltarTraza(0)
+            self.vista.resaltarLinea(trazas[0].linea)
+            self.vista.mostrarAmbientes(trazas[0].snapshot)
+
     def siguientePaso(self):
         traza = self.executor.siguientePaso()
         if traza:
@@ -70,9 +75,11 @@ class Controller:
         if traza:
             self.vista.resaltarLinea(traza.linea)
             self.vista.mostrarAmbientes(traza.snapshot)
+            self.vista.resaltarTraza(self.executor.indiceActual)
 
     def reiniciarPasoAPaso(self):
         self.executor.reiniciarPasoAPaso()
+        self.vista.limpiarResaltadoLinea()
         self.vista.mostrarAmbientes(None)
 
     def reiniciarEjecucion(self):
@@ -82,9 +89,15 @@ class Controller:
 
     def mostrarDetalleError(self):
         for err in self.erroresParseo:
-            self.vista.mostrarError(
-                f"Línea {err.linea}: {err.mensaje} -> {err.fragmento}"
-            )
+            mensaje = (
+                        f"Error en línea {err.linea}\n\n"
+                        f"{err.mensaje}\n"
+                        f"Fragmento: '{err.fragmento}'"
+                    )
+            self.vista.mostrarError(mensaje)
+            self.vista.resaltarLinea(err.linea)
+            self.vista.resaltarFragmento(err.linea, err.fragmento)
+
 
     def procesarTexto(self, codigo):
         self.ultimoCodigo = codigo

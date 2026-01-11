@@ -14,6 +14,8 @@ class GUIView:
         self._crear_componentes()
         self.varNodes = {}
 
+        self.lineaActual = None
+
     def _crear_componentes(self):
         # Área de código
         self.editor = scrolledtext.ScrolledText(self.root, width=80, height=20)
@@ -95,6 +97,11 @@ class GUIView:
             background="#d4edda"   # verde suave
         )
 
+        # Configuración de tag para resaltar fragmentos con error
+        self.editor.tag_configure(
+            "error_fragmento",
+            background="#fab1a0"
+        )
 
 
     def _mostrar_env_recursivo(self, env, nivel=0):
@@ -132,6 +139,25 @@ class GUIView:
     def _limpiarAmbientes(self):
         for item in self.panelAmbientes.get_children():
             self.panelAmbientes.delete(item)
+    
+    def limpiarResaltadoLinea(self):
+        self.editor.tag_remove("linea_actual", "1.0", tk.END)
+        self.lineaActual = None
+
+    def resaltarFragmento(self, linea, fragmento):
+        if not fragmento:
+            return
+
+        texto_linea = self.editor.get(f"{linea}.0", f"{linea}.end")
+        idx = texto_linea.find(fragmento)
+
+        if idx == -1:
+            return
+
+        inicio = f"{linea}.{idx}"
+        fin = f"{linea}.{idx + len(fragmento)}"
+
+        self.editor.tag_add("error_fragmento", inicio, fin)
 
 
     # ======================
@@ -142,7 +168,7 @@ class GUIView:
         return self.editor.get("1.0", tk.END)
 
     def mostrarError(self, msg):
-        messagebox.showerror("Error", msg)
+        messagebox.showerror("Error de compilación", msg)
 
     def mostrarAmbientes(self, env):
         self._limpiarAmbientes()
@@ -231,17 +257,25 @@ class GUIView:
         self.root.mainloop()
 
     def resaltarLinea(self, linea):
-        # Quitar resaltados anteriores
-        self.editor.tag_remove("linea_actual", "1.0", tk.END)
-
         if linea < 1:
             return
+
+        # Quitar resaltado anterior
+        if self.lineaActual:
+            self.editor.tag_remove(
+                "linea_actual",
+                f"{self.lineaActual}.0",
+                f"{self.lineaActual}.end"
+            )
 
         inicio = f"{linea}.0"
         fin = f"{linea}.end"
 
         self.editor.tag_add("linea_actual", inicio, fin)
         self.editor.see(inicio)
+
+        self.lineaActual = linea
+
 
     def mostrarTrazas(self, trazas):
         self.panelTrazas.delete(0, tk.END)

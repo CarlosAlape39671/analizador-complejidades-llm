@@ -163,3 +163,4 @@ x := x + 1"""
 
     assert len(trazas) >= 2
     assert trazas[0].snapshot.obtener("x") == 1
+
