@@ -1,5 +1,7 @@
 # test/test_executor.py
 
+import pytest
+
 from model.lexer.lexer import Lexer
 from model.parser.parser import Parser
 from model.execution.executor import Executor

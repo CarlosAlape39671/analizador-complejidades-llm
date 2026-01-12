@@ -23,7 +23,6 @@ class Executor:
     """
 
     def __init__(self):
-        self.sourceMap = SourceMap()
         self.trazas = []
         self.indiceActual = 0
 
@@ -31,9 +30,9 @@ class Executor:
         """
         Ejecuta el programa completo.
         """
+        self.sourceMap = ast.sourceMap
         env = Environment()
         self.ejecutarNodo(ast.raiz, env)
-        self.sourceMap = ast.sourceMap
         return env
 
     def ejecutarNodo(self, node, env):
@@ -166,7 +165,16 @@ class Executor:
             return int(expr.valor)
 
         if isinstance(expr, IdentifierNode):
-            return env.obtener(expr.nombre)
+            try:
+                return env.obtener(expr.nombre)
+            except RuntimeError as e:
+                linea = getattr(expr, "linea", -1)
+                fragmento = self.sourceMap.obtenerFragmento(linea)
+                raise RuntimeError(
+                    f"Error en línea {linea}\n"
+                    f"{str(e)}\n"
+                    f"Fragmento: {fragmento}"
+                )
 
         if isinstance(expr, BinaryExpressionNode):
             izq = self.evaluar(expr.izquierda, env)
@@ -206,6 +214,8 @@ class Executor:
         """
         self.trazas = []
         self.indiceActual = 0
+
+        self.sourceMap = ast.sourceMap 
 
         env = Environment()
         self._ejecutarNodoConTraza(ast.raiz, env)

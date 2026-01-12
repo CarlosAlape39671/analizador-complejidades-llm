@@ -7,5 +7,6 @@ class AST:
     Contiene la raíz del árbol (ProgramNode).
     """
 
-    def __init__(self, raiz: ProgramNode):
+    def __init__(self, raiz: ProgramNode, sourceMap=None):
         self.raiz = raiz
+        self.sourceMap = sourceMap

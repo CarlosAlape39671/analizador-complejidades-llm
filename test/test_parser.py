@@ -45,3 +45,14 @@ end"""
 
     ast = parser.parse(lexer.tokenizar(codigo))
     assert ast is not None
+
+def test_parser_programa_valido():
+    codigo = """x := 1
+x := x + 1"""
+
+    lexer = Lexer()
+    parser = Parser()
+
+    ast = parser.parse(lexer.tokenizar(codigo))
+    assert ast is not None
+    assert ast.raiz is not None

@@ -66,3 +66,12 @@ class TestParserErrors(unittest.TestCase):
         errores = parser.obtenerErrores()
 
         self.assertEqual(errores[0].linea, 3)
+
+    def test_parser_sentencia_desconocida():
+        codigo = "???"
+
+        lexer = Lexer()
+        parser = Parser()
+
+        ast = parser.parse(lexer.tokenizar(codigo))
+        assert ast is None
