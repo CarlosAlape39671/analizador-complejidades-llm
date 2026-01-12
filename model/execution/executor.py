@@ -168,12 +168,9 @@ class Executor:
             try:
                 return env.obtener(expr.nombre)
             except RuntimeError as e:
-                linea = getattr(expr, "linea", -1)
-                fragmento = self.sourceMap.obtenerFragmento(linea)
-                raise RuntimeError(
-                    f"Error en línea {linea}\n"
-                    f"{str(e)}\n"
-                    f"Fragmento: {fragmento}"
+                self._errorEjecucion(
+                    mensaje=str(e),
+                    linea=getattr(expr, "linea", -1)
                 )
 
         if isinstance(expr, BinaryExpressionNode):
@@ -189,6 +186,11 @@ class Executor:
             if op.name == "MULT":
                 return izq * der
             if op.name == "DIV":
+                if der == 0:
+                    self._errorEjecucion(
+                        "División por cero",
+                        getattr(expr, "linea", -1)
+                    )
                 return izq // der
             if op.name == "MOD":
                 return izq % der
@@ -205,8 +207,12 @@ class Executor:
                 return izq == der
             if op.name == "NEQ":
                 return izq != der
-
-        raise RuntimeError("Expresión no soportada")
+            
+            # Si llega aquí, el operador no existe
+            self._errorEjecucion(
+                f"Operador no soportado: {op.name}",
+                getattr(expr, "linea", -1)
+            )
     
     def ejecutarPasoAPaso(self, ast):
         """
@@ -293,3 +299,21 @@ class Executor:
         self.trazas = []
         self.indiceActual = 0
 
+    def _errorEjecucion(self, mensaje, linea):
+        fragmento = ""
+
+        if self.sourceMap and linea >= 1:
+            try:
+                fragmento = self.sourceMap.obtenerFragmento(linea)
+            except:
+                fragmento = ""
+
+        error = (
+            f"Error en línea {linea}\n\n"
+            f"{mensaje}"
+        )
+
+        if fragmento:
+            error += f"\nFragmento: {fragmento}"
+
+        raise RuntimeError(error)

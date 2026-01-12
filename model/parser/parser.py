@@ -109,11 +109,27 @@ class Parser:
 
         expresion = self.parse_expression()
 
-        return AssignmentNode(
+        node = AssignmentNode(
             identificador.lexema,
             expresion,
             linea=identificador.linea
         )
+
+        self.sourceMap.registrar(
+            node,
+            identificador.linea
+        )
+
+        return node
+
+    def parse_expresion_binaria(self, p):
+        nodo = BinaryExpressionNode(p[1], p[2], p[3])
+        linea = p.lineno(2)  # el operador es ideal
+
+        self.sourceMap.registrar(nodo, linea)
+
+        p[0] = nodo
+
 
     # =========================
     # Expresiones

@@ -167,8 +167,15 @@ class GUIView:
     def obtenerCodigo(self):
         return self.editor.get("1.0", tk.END)
 
-    def mostrarError(self, msg):
-        messagebox.showerror("Error de compilación", msg)
+    def mostrarError(self, mensaje):
+        messagebox.showerror("Error", mensaje)
+
+        import re
+        match = re.search(r"línea (\d+)", mensaje)
+        if match:
+            linea = int(match.group(1))
+            self.resaltarLinea(linea)
+
 
     def mostrarAmbientes(self, env):
         self._limpiarAmbientes()

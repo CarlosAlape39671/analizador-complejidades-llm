@@ -17,4 +17,11 @@ class SourceMap:
 
     def obtenerNodos(self, linea):
         return self.linea_a_nodos.get(linea, [])
+    
+    def registrar(self, nodo, linea):
+        self.nodo_a_linea[nodo] = linea
+        self.linea_a_nodos.setdefault(linea, []).append(nodo)
+
+        nodo.linea = linea
+
 
